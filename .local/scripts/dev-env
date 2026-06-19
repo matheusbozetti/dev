@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+(
+cd $HOME/Projects/matheus/dev-env
+./dev-env
+hash -r
+)

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+neovim_dir="$HOME/personal/neovim"
+
+
+
+git clone -b release-0.12 https://github.com/neovim/neovim $neovim_dir
+brew install cmake gettext lua@5.4
+
+cd $neovim_dir
+make CMAKE_BUILD_TYPE=RelWithDebInfo
+sudo make install
+

@@ -1,0 +1,13 @@
+# theme = moonfly
+theme = ember-soft.conf
+
+# Nerd Font explicita pra renderizar icones (lazygit, starship branch, etc.)
+font-family = "Hack Nerd Font"
+
+background-opacity = 0.5
+
+window-padding-x = 8
+window-padding-y = 8
+
+command = /bin/zsh -l
+

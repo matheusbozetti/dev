@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+
+result=$(find ~/Projects -mindepth 1 -maxdepth 2 -type d | fzf --expect=alt-enter)
+key=$(head -1 <<< "$result")
+selected=$(sed -n 2p <<< "$result")
+if [[ -z "$selected" ]]; then
+    exit 0
+fi
+
+selected_name=$(basename $selected | tr ":,. " "____")
+
+# Alt+Enter aterrissa no nvim; Enter aterrissa no shell (com setup ready-tmux).
+if [[ "$key" == "alt-enter" ]]; then
+    open_cmd="nvim ."
+    exec_cmd="nvim ."
+else
+    open_cmd="ready-tmux"
+    exec_cmd="$SHELL"
+fi
+
+switch_to() {
+    if [[ -z "$TMUX" ]]; then
+        tmux attach-session -t $selected_name
+    else
+        tmux switch-client -t $selected_name
+    fi
+}
+
+if tmux has-session -t=$selected_name 2> /dev/null; then
+    switch_to
+    exit 0
+fi
+
+tmux new-session -ds $selected_name -c $selected
+switch_to
+tmux send-keys -t $selected_name "$open_cmd" ^M

@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+
+selected=$(
+  AWS_PROFILE=production aws ec2 describe-instances --output json |
+    jq -r '
+      .Reservations[].Instances[] |
+      (
+        if .State.Name == "running" then "🟢"
+        elif .State.Name == "pending" then "🟡"
+        elif .State.Name == "stopping" then "🚧"
+        elif .State.Name == "stopped" then "🔴"
+        elif .State.Name == "shutting-down" then "🔥"
+        elif .State.Name == "terminated" then "💀"
+        else "❓"
+        end
+      ) as $status |
+      "\($status) \((.Tags[]? | select(.Key=="Name") | .Value) // "sem-nome") | \(.InstanceId)"
+    ' |
+    sort |
+    fzf
+)
+
+if [[ -z "${selected:-}" ]]; then
+  exit 0
+fi
+
+instance_name="${selected%% | *}"
+instance_id="${selected##*| }"
+
+echo "$instance_id"
+echo "-----"
+echo "$instance_name"
