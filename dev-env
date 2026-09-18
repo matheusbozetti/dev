@@ -1,16 +1,30 @@
 #!/usr/bin/env bash
 
-script_dir=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd) 
+set -euo pipefail
+
+script_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 dry="0"
 
-while [[ $# > 0 ]]; do
+while [[ $# -gt 0 ]]; do
     if [[ $1 == "--dry" ]]; then
         dry="1"
-    else
-        filter="$1"
     fi
     shift
 done
+
+# Numa maquina nova o XDG_CONFIG_HOME ainda nao existe: quem o exporta e o
+# .config/zsh/.zshenv que este script instala, e o instalador roda em bash.
+# Sem o fallback o destino fica vazio e o rm -rf do copy_dir acerta a raiz.
+config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
+
+# tpm e os plugins do zsh sao clonados em runtime aqui dentro. No repo essas
+# pastas sao submodules nao populados, entao chegam vazias no clone.
+plugin_dirs=(
+    "$config_home/tmux/plugins"
+    "$config_home/zsh/plugins"
+)
+
+stash_root="${TMPDIR:-/tmp}/dev-env-plugins.$$"
 
 log() {
     if [[ $dry == "1" ]]; then
@@ -30,19 +44,61 @@ execute() {
     "$@"
 }
 
+slug_of() {
+    echo "${1#$config_home/}" | tr '/' '_'
+}
 
-log "-------------- dev-env --------------"
+# O copy_dir faz rm -rf no diretorio de destino, o que levaria junto os plugins
+# ja instalados. Guarda fora do caminho antes de copiar e devolve depois.
+stash_plugins() {
+    local dir
+    for dir in "${plugin_dirs[@]}"; do
+        [[ -d $dir ]] || continue
+        [[ -n $(ls -A "$dir" 2>/dev/null) ]] || continue
+
+        execute mkdir -p "$stash_root"
+        execute mv "$dir" "$stash_root/$(slug_of "$dir")"
+    done
+}
+
+restore_plugins() {
+    local dir slug
+    for dir in "${plugin_dirs[@]}"; do
+        slug=$(slug_of "$dir")
+        [[ -d "$stash_root/$slug" ]] || continue
+
+        execute rm -rf "$dir"
+        execute mkdir -p "$(dirname "$dir")"
+        execute mv "$stash_root/$slug" "$dir"
+    done
+
+    [[ -d $stash_root ]] && execute rmdir "$stash_root"
+    return 0
+}
+
+# Um submodule nao populado deixa a pasta existindo e vazia, o que engana o
+# auto-install do tpm e do plugins.zsh -- ambos so testam se o diretorio existe.
+prune_empty_plugins() {
+    local dir
+    for dir in "${plugin_dirs[@]}"; do
+        [[ -d $dir ]] || continue
+        execute find "$dir" -mindepth 1 -maxdepth 1 -type d -empty -delete
+    done
+}
 
 copy_dir() {
     from=$1
     to=$2
 
-    pushd $from > /dev/null
-        dirs=$(find . -mindepth 1 -maxdepth 1 -type d)
+    execute mkdir -p "$to"
 
-        for dir in $dirs; do
-            execute rm -rf "$to/$dir"
-            execute cp -r "$dir" "$to/$dir"
+    pushd "$from" > /dev/null || return 1
+        entries=$(find . -mindepth 1 -maxdepth 1)
+
+        for entry in $entries; do
+            name=$(basename "$entry")
+            execute rm -rf "$to/$name"
+            execute cp -r "$entry" "$to/$name"
         done
     popd > /dev/null
 }
@@ -50,13 +106,24 @@ copy_dir() {
 copy_file() {
     from=$1
     to=$2
-    name=$(basename $from)
+    name=$(basename "$from")
 
+    execute mkdir -p "$to"
     execute rm -f "$to/$name"
     execute cp "$from" "$to/$name"
 }
 
 
-copy_dir .config $XDG_CONFIG_HOME
-copy_dir .local $HOME/.local
-copy_file ./home/.zshenv $HOME
+log "-------------- dev-env --------------"
+
+# Os caminhos abaixo sao relativos ao repo, nao ao cwd de quem chamou.
+cd "$script_dir"
+
+stash_plugins
+
+copy_dir .config "$config_home"
+copy_dir .local "$HOME/.local"
+copy_file ./home/.zshenv "$HOME"
+
+restore_plugins
+prune_empty_plugins

@@ -1,13 +1,36 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 neovim_dir="$HOME/personal/neovim"
+branch="release-0.12"
 
+# O instalador pode rodar ja como root; sudo nem sempre existe na imagem.
+if [[ $(id -u) -eq 0 ]]; then
+    sudo=""
+elif command -v sudo > /dev/null 2>&1; then
+    sudo="sudo"
+else
+    echo "ERROR: precisa de root ou sudo para instalar o neovim" >&2
+    exit 1
+fi
 
+# Dependencias de build do neovim no Ubuntu (o equivalente ao brew install).
+export DEBIAN_FRONTEND=noninteractive
+$sudo apt-get update
+$sudo apt-get install -y ninja-build gettext cmake curl build-essential file git
 
-git clone -b release-0.12 https://github.com/neovim/neovim $neovim_dir
-brew install cmake gettext lua@5.4
+# Idempotente: numa reexecucao o clone falharia com "directory already exists".
+if [[ -d "$neovim_dir/.git" ]]; then
+    git -C "$neovim_dir" fetch --depth=1 origin "$branch"
+    git -C "$neovim_dir" checkout -B "$branch" FETCH_HEAD
+else
+    rm -rf "$neovim_dir"
+    mkdir -p "$(dirname "$neovim_dir")"
+    git clone --depth=1 -b "$branch" https://github.com/neovim/neovim "$neovim_dir"
+fi
 
-cd $neovim_dir
+cd "$neovim_dir"
+make distclean > /dev/null 2>&1 || true
 make CMAKE_BUILD_TYPE=RelWithDebInfo
-sudo make install
-
+$sudo make install

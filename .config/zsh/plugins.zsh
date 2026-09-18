@@ -6,7 +6,11 @@ ZPLUGINDIR="${ZDOTDIR:-$HOME/.config/zsh}/plugins"
 
 _zplugin_load() {
   local plugin_path="${ZPLUGINDIR}/${2}"
-  if [[ ! -d "$plugin_path" ]]; then
+  # Testa o arquivo de entrada, nao o diretorio: um submodule nao populado deixa
+  # a pasta existindo e vazia, o guard passaria e o source falharia.
+  if [[ ! -f "${plugin_path}/${2}.plugin.zsh" ]]; then
+    # rmdir so remove se estiver vazia, entao nunca apaga instalacao valida.
+    [[ -d "$plugin_path" ]] && rmdir "$plugin_path" 2>/dev/null
     mkdir -p "$ZPLUGINDIR"
     echo "Installing ${2}..."
     git clone --depth=1 "https://github.com/${1}/${2}" "$plugin_path" \
