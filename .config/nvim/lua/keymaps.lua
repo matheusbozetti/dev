@@ -57,5 +57,9 @@ vim.keymap.set({ "v", "n" }, "<C-l>", "<cmd>bn<CR>", { desc = "Move buffer to th
 vim.keymap.set("n", "<C-f>", "<cmd>silent !tmux new-window tmux-sessionizer<CR>", { desc = "Tmux sessionizer" })
 
 -- Git
-vim.keymap.set({ "n" }, "gh", "<cmd>diffget //2<CR>", { desc = "Apply diff on left" })
+vim.keymap.set({ "n" }, "gh", "<cmd>difiget //2<CR>", { desc = "Apply diff on left" })
 vim.keymap.set({ "n" }, "gl", "<cmd>diffget //3<CR>", { desc = "Apply diff on right" })
+
+-- Fix CTRL+D and U motions
+vim.keymap.set("n", "<C-u>", "15k", { desc = "15 lines up" })
+vim.keymap.set("n", "<C-d>", "15j", { desc = "15 lines down" })

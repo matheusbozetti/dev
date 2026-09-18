@@ -57,6 +57,40 @@ copy_file() {
 }
 
 
+install_launch_agents() {
+    from=$1
+    to="$HOME/Library/LaunchAgents"
+
+    if [[ ! -d $from ]]; then
+        return
+    fi
+
+    execute mkdir -p "$to"
+
+    for plist in "$from"/*.plist; do
+        if [[ ! -e $plist ]]; then
+            continue
+        fi
+
+        name=$(basename "$plist")
+        label="${name%.plist}"
+
+        log "install launch agent $label"
+
+        if [[ $dry == "1" ]]; then
+            continue
+        fi
+
+        # plist nao expande variaveis: o $HOME entra aqui, na instalacao.
+        sed "s|__HOME__|$HOME|g" "$plist" > "$to/$name"
+
+        # recarrega para pegar alteracoes; bootout falha se ainda nao existia.
+        launchctl bootout "gui/$(id -u)/$label" > /dev/null 2>&1
+        launchctl bootstrap "gui/$(id -u)" "$to/$name"
+    done
+}
+
 copy_dir .config $XDG_CONFIG_HOME
 copy_dir .local $HOME/.local
 copy_file ./home/.zshenv $HOME
+install_launch_agents ./home/Library/LaunchAgents

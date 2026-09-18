@@ -16,6 +16,8 @@ compdef eza=ls
 # Better cat
 alias cat='bat'
 
+alias cw='CLAUDE_CONFIG_DIR=$HOME/.claude-work claude'
+
 # =========================================================
 # Core utilities
 # =========================================================

@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+
+# O sketchybar (v2.23.0) trava em deadlock quando o macOS reconfigura o display
+# (monitor conectado/desconectado, resolucao alterada, sleep/wake). As duas
+# pontas ficam esperando uma a outra:
+#
+#   main thread ......... display reconfig -> CVDisplayLink::stop()
+#   CVDisplayLink thread. animator_update  -> CVCGDisplayLink::finalize()
+#
+# O processo continua vivo, mas para de responder e a barra some. Como ele esta
+# congelado, nao consegue se recuperar sozinho: quem reinicia tem que ser algo
+# de fora. Este script e chamado periodicamente pelo LaunchAgent
+# com.matheusbozetti.sketchybar-watchdog.
+
+set -u
+
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+
+LABEL="homebrew.mxcl.sketchybar"
+LOG="${XDG_STATE_HOME:-$HOME/.local/state}/sketchybar-watchdog.log"
+
+SKETCHYBAR=""
+for candidate in /opt/homebrew/bin/sketchybar /usr/local/bin/sketchybar; do
+    if [[ -x $candidate ]]; then
+        SKETCHYBAR="$candidate"
+        break
+    fi
+done
+
+# sketchybar nao instalado: nada a vigiar.
+[[ -n $SKETCHYBAR ]] || exit 0
+
+# Sem processo no ar, o proprio launchd recoloca. Nao e o caso que tratamos.
+pgrep -x sketchybar >/dev/null 2>&1 || exit 0
+
+# Um daemon saudavel devolve o JSON da barra. Em deadlock devolve vazio, e com
+# exit 0 -- por isso conferimos o conteudo, nao o codigo de saida. O alarm
+# protege contra a variante em que a chamada fica pendurada.
+responde() {
+    perl -e 'alarm shift; exec @ARGV' 5 "$SKETCHYBAR" --query bar 2>/dev/null \
+        | grep -q '"position"'
+}
+
+responde && exit 0
+
+# Uma falha isolada pode ser so a janela de boot do sketchybar. O deadlock e
+# permanente, entao a segunda checagem separa um caso do outro.
+sleep 5
+responde && exit 0
+
+mkdir -p "$(dirname "$LOG")"
+printf '%s  sem resposta, reiniciando (pid %s)\n' \
+    "$(date '+%Y-%m-%d %H:%M:%S')" \
+    "$(pgrep -x sketchybar | head -1)" >> "$LOG"
+
+launchctl kickstart -k "gui/$(id -u)/$LABEL"

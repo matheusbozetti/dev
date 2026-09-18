@@ -1,0 +1,145 @@
+#!/bin/bash
+
+source "$CONFIG_DIR/colors.sh"
+PLUGIN_DIR="$CONFIG_DIR/plugins"
+
+##### Bar Appearance #####
+
+sketchybar --bar position=top height=30 blur_radius=10 drawing=on #color=$BAR_COLOR 
+
+##### Changing Defaults #####
+
+default=(
+  padding_left=5
+  padding_right=5
+  icon.font="Hack Nerd Font:Regular:12.0"
+  label.font="SF Pro:Semibold:12.0"
+  icon.color=$WHITE
+  label.color=$WHITE
+  icon.padding_left=10
+  icon.padding_right=0
+  label.padding_left=10
+  label.padding_right=10
+  background.color=$ITEM_BG_COLOR
+  background.corner_radius=5
+  background.height=24
+)
+sketchybar --default "${default[@]}"
+
+##### Left Items #####
+
+sketchybar --add item apple left \
+           --set apple icon= label.drawing=off icon.padding_right=10 \
+           --add item front_app left \
+           --set front_app icon.drawing=off script="$PLUGIN_DIR/front_app.sh"  \
+           --subscribe front_app front_app_switched
+
+sketchybar --add event aerospace_workspace_change
+sketchybar --add event aerospace_mode_change
+sketchybar --add event aerospace_fullscreen_change
+
+sketchybar --add item aerospace_mode left \
+           --set aerospace_mode \
+                 icon= \
+                 label="SERVICE" \
+                 icon.color=$RED \
+                 label.color=$RED \
+                 label.padding_left=4 \
+                 background.color=$RED_TINT \
+                 drawing=off \
+                 script="$PLUGIN_DIR/aerospace_mode.sh" \
+          --subscribe aerospace_mode aerospace_mode_change
+
+sketchybar --add item aerospace_fullscreen left \
+           --set aerospace_fullscreen \
+                 icon= \
+                 label.drawing=off \
+                 icon.color=$ACCENT_COLOR \
+                 icon.padding_right=10 \
+                 update_freq=2 \
+                 drawing=off \
+                 script="$PLUGIN_DIR/aerospace_fullscreen.sh" \
+          --subscribe aerospace_fullscreen aerospace_fullscreen_change aerospace_workspace_change front_app_switched
+
+sketchybar --add item window_title left \
+           --set window_title icon=\
+                               label.font="SF Pro:Semibold:14.0" \
+                               icon.padding_left=0 \
+                               width=dynamic \
+                               updates=on \
+                               update_freq=1 \
+                               script="$PLUGIN_DIR/aerospace_window_title.sh" \
+          --subscribe window_title aerospace_workspace_change
+
+# music: comeca oculto (drawing=off), o plugin liga quando ha midia tocando
+sketchybar --add item music left \
+           --set music \
+             script="$PLUGIN_DIR/music.sh" \
+             icon= \
+             label.padding_left=0 \
+             icon.padding_right=8 \
+             label.color=$GREEN \
+             icon.color=$GREEN \
+             click_script="open -a Spotify" \
+             update_freq=2 \
+             drawing=off \
+           --subscribe music media_change
+
+
+##### Right Items #####
+
+sketchybar \
+  --add item clock right \
+    --set clock \
+      update_freq=10 \
+      icon=􀉉 \
+      script="$PLUGIN_DIR/clock.sh" \
+  \
+  --add item weather right \
+    --set weather \
+      script="$PLUGIN_DIR/weather.sh" \
+      icon= \
+      update_freq=300 \
+      label.padding_left=0 \
+      icon.padding_right=8 \
+      label.color=$WHITE \
+      icon.color=$WHITE \
+      click_script="open -a Weather" \
+      drawing=on \
+  \
+  --add item volume right \
+    --set volume \
+      script="$PLUGIN_DIR/volume.sh" \
+      padding_right=4 \
+      --subscribe volume volume_change \
+  \
+  --add item battery right \
+    --set battery \
+      update_freq=120 \
+      script="$PLUGIN_DIR/battery.sh" \
+      padding_right=4 \
+      --subscribe battery system_woke power_source_change \
+  \
+  --add item disk right \
+    --set disk \
+    script="$PLUGIN_DIR/disk.sh" \
+    icon= \
+     update_freq=3 \
+     label.padding_left=0 \
+     icon.padding_right=8 \
+    label.color=$TEAL \
+    icon.color=$TEAL \
+  \
+  --add graph cpu_usage right 50 \
+     --set cpu_usage script="$PLUGIN_DIR/cpu_usage.sh" \
+      update_freq=5 \
+      label.color=$PURPLE \
+      graph.color=$PURPLE \
+      graph.fill_color=$PURPLE_FILL \
+      graph.line_width=2 \
+      icon.drawing=off
+
+##### Force all scripts to run the first time #####
+sketchybar --update
+
+sketchybar --trigger aerospace_workspace_change FOCUSED_WORKSPACE=$(aerospace list-workspaces --focused)

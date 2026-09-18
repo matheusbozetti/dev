@@ -1,3 +1,4 @@
+export TERM=xterm-256color
 # Load environment variables
 [ -n "$ZDOTDIR" ] && [ -f "$ZDOTDIR/.zshenv" ] && source "$ZDOTDIR/.zshenv"
 

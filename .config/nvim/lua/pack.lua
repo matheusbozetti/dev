@@ -12,7 +12,6 @@ vim.pack.add({
 	"https://github.com/nvim-mini/mini.nvim",
 	{ src = "https://github.com/nvim-treesitter/nvim-treesitter", branch = "main" },
 	"https://github.com/nvim-treesitter/nvim-treesitter-textobjects",
-	"https://github.com/windwp/nvim-ts-autotag",
 	"https://github.com/folke/snacks.nvim",
 	"https://github.com/mason-org/mason.nvim",
 	"https://github.com/mason-org/mason-lspconfig.nvim",
@@ -21,6 +20,10 @@ vim.pack.add({
 	{ src = "https://github.com/saghen/blink.cmp", branch = "v1.*" },
 	"https://github.com/L3MON4D3/LuaSnip",
 	"https://github.com/stevearc/conform.nvim",
+
+	-- nvim motion helpers
+	"https://github.com/m4xshen/hardtime.nvim",
+	"https://github.com/tris203/precognition.nvim",
 })
 
 local map = vim.keymap.set
@@ -33,8 +36,8 @@ require("mini.cmdline").setup({
 -- mini surround
 require("mini.surround").setup()
 
--- mini pairs
-require("mini.pairs").setup()
+-- mini pairs (desativado: fecha aspas e parenteses automaticamente)
+-- require("mini.pairs").setup()
 
 -- mini comment
 require("mini.comment").setup()
@@ -137,7 +140,7 @@ map("n", "<leader>fs", function()
 end, { desc = "Smart picker (files + buffers)" })
 
 map("n", "<leader>ff", function()
-	Snacks.picker.files({ hidden = true })
+	Snacks.picker.files({ hidden = true, ignored = true })
 end, { desc = "Find files" })
 
 map("n", "<leader>fp", function()
@@ -145,11 +148,11 @@ map("n", "<leader>fp", function()
 end, { desc = "Find projects" })
 
 map("n", "<leader>fg", function()
-	Snacks.picker.grep()
+	Snacks.picker.grep({ hidden = true, ignored = true })
 end, { desc = "Grep in project" })
 
 map("n", "<leader>fG", function()
-	Snacks.picker.grep({ hidden = true })
+	Snacks.picker.grep({ hidden = true, ignored = true })
 end, { desc = "Grep in project" })
 
 map("n", "<leader>fc", function()
@@ -230,14 +233,5 @@ require("treesitter")
 require("lsp")
 require("catppuccin-config")
 
--- auto-close/rename HTML/JSX/Vue tags (needs treesitter parsers — already loaded above)
--- pcall(function()
--- 	require("nvim-ts-autotag").setup({
--- 		opts = {
--- 			enable_close = true,
--- 			enable_rename = true,
--- 			enable_close_on_slash = false,
--- 		},
--- 	})
--- end)
---
+require("hardtime").setup()
+require("precognition").setup()
