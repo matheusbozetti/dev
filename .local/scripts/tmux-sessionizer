@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-result=$(find ~/Projects -mindepth 1 -maxdepth 2 -type d | fzf --expect=alt-enter)
+result=$(find ~/Projects -mindepth 1 -maxdepth 1 -type d | fzf --expect=alt-enter)
 key=$(head -1 <<< "$result")
 selected=$(sed -n 2p <<< "$result")
 if [[ -z "$selected" ]]; then
