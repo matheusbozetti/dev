@@ -1,7 +1,0 @@
-#!/usr/bin/env bash
-
-pushd $HOME/Projects/matheus/dev-env
-git add .
-git commit -m 'automated commit'
-git push
-popd

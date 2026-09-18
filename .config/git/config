@@ -1,10 +1,6 @@
 [init]
     defaultBranch = main
 
-[user]
-    name = Matheus Bozetti
-    email = matheusbzt@gmail.com
-
 [core]
     editor = nvim
     pager = delta
@@ -92,8 +88,6 @@
     discard = restore
     cleanup = "!git branch --merged | grep -vE '^[* ] (main|master|develop|staging|production)$' | xargs -r git branch -d"
     gone = "!git fetch --prune && git branch -vv | grep ': gone]' | awk '{print $1}' | xargs -r git branch -d"
-    github = config user.name 'Matheus Bozetti' && git config user.email 'matheusbzt@gmail.com'
-    azure = config user.name 'Matheus Bozetti' && git config user.email 'matheus.bozetti@tbdc.com.br'
 
 [safe]
     directory = *
