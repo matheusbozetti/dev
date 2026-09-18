@@ -12,6 +12,15 @@ while [[ $# -gt 0 ]]; do
     shift
 done
 
+# Tudo aqui e instalado dentro de $HOME e nao precisa de root. Com sudo o Ubuntu
+# reseta HOME para /root (Defaults env_reset), entao as copias iriam parar em
+# /root/.config e os arquivos ficariam pertencendo ao root.
+if [[ -n ${SUDO_USER:-} ]]; then
+    echo "ERROR: nao rode com sudo -- HOME aponta para $HOME e as copias iriam para la." >&2
+    echo "       Rode como seu usuario: ./dev-env" >&2
+    exit 1
+fi
+
 # Numa maquina nova o XDG_CONFIG_HOME ainda nao existe: quem o exporta e o
 # .config/zsh/.zshenv que este script instala, e o instalador roda em bash.
 # Sem o fallback o destino fica vazio e o rm -rf do copy_dir acerta a raiz.
